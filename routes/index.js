@@ -5,23 +5,23 @@ const {generateToken,authenticatetoken, authenticateToken}=require('../auth/inde
 const knex=require('../Database/index')
 
 
-router.post('/signup',(req,res)=>{
-    knex.select('*').from('test').where({  "email": req.body.email }).then((data) => {
-            if((data[0].email)==req.body.email){
-                res.send("email already exist")
-            }}).catch((err)=>{
-    knex("test")
-    .insert({
-        name:req.body.name,
-        email:req.body.email,
-        password:bcrypt.hashSync(req.body.password,10)
+router.post("/register",(req,res)=>{
+    if(req.body.email===undefined || req.body.password===undefined ){
+        res.send({"suggestion":"email and password both are require"})}
+    else{
+    knex.select("*").from("user").where({email:req.body.email}).then((data)=>{
+        if(data.length<1){
+            knex("user").insert({name:req.body.name,email:req.body.email,password:bcrypt.hashSync(req.body.password,10)}).then((data)=>{
+                res.send({'massage':'data insert'})
+            }).catch((err)=>{
+                res.send(err.massage)
+            })
+        }else{
+            res.send("data already exist")
+        }
     })
-    .then((data)=>{
-        res.send({"massage":"datainsert"});
-    }).catch((err)=>{
-        console.log(err.massage);
+}
 })
-})})
 
 router.post("/login", (req, res) => {
     if(req.body.email === undefined || req.body.password === undefined){
@@ -32,7 +32,8 @@ router.post("/login", (req, res) => {
         var password=bcrypt.compareSync(req.body.password,data[0].password)
         console.log(password)
         if (password){
-            const token=generateToken(req.body)
+            const token=generateToken(req.body).split("=")[0]
+           
             res.cookie("token",token).send(data)
         }else{
             res.send("Invalid email or password")
